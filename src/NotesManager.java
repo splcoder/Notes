@@ -1,11 +1,7 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -14,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class NotesManager {
-	public static final String FILE_NAME_FOR_ID = "notes_manager_id.txt";
-	public static final String FILE_NAME = "notes_manager.txt";
+	public static final String FILE_NAME_FOR_ID	= "notes_manager_id.txt";
+	public static final String FILE_NAME		= "notes_manager.txt";
 
 	private Map<Long, Note> mapNotes = new HashMap<Long, Note>();
 
@@ -27,18 +23,23 @@ public class NotesManager {
 	private ObjectOutputStream oos;
 	
 	//---------------------------------------------
-	// Id
+	// Note.lastId
 	private static void writeIdToFile() throws IOException {
 		FileOutputStream fosId = new FileOutputStream( FILE_NAME_FOR_ID, false );
 		fosId.write( Converter.longToBytes( Note.getLastId() ) );
 		fosId.close();
 	}
-	private static long readIdFromFile() throws IOException {
+	private static void readIdFromFile() throws IOException {
 		byte[] bytes = new byte[ Long.BYTES ];
-		FileInputStream fisId = new FileInputStream( FILE_NAME_FOR_ID );
-		fisId.read( bytes );
-		fisId.close();
-		return Converter.bytesToLong( bytes );
+		try {
+			FileInputStream fisId = new FileInputStream( FILE_NAME_FOR_ID );
+			fisId.read( bytes );
+			fisId.close();
+			Note.setLastId( Converter.bytesToLong( bytes ) );
+		} catch( FileNotFoundException e ) {
+			Console.show( "The 'id file' must be created", true );
+			// Using default = 0 = starting value
+		}
 	}
 	//---------------------------------------------
 
@@ -61,6 +62,7 @@ public class NotesManager {
 	}*/
 	
 	private void writeAllToFile() throws IOException {
+		// Write the notes
 		fos = new FileOutputStream( FILE_NAME, false );
 		oos = new ObjectOutputStream( fos );
 		if( oos != null ) {
@@ -69,12 +71,17 @@ public class NotesManager {
 			}
 			oos.close();
 		}
+		// Write the lastId
+		writeIdToFile();
 	}
 	/**
 	 * The constructor will read all the notes saved
 	 * @throws IOException 
 	 */
 	public NotesManager() throws IOException {
+		// Read the lastId
+		readIdFromFile();
+		// Read all the notes
 		try {
 			fis = new FileInputStream( FILE_NAME );
 			ois = new ObjectInputStream( fis );
@@ -84,7 +91,7 @@ public class NotesManager {
 				mapNotes.put( note.getId(), note );
 			}
 		} catch( FileNotFoundException e ) {
-			Console.show( "The file must be created", true );
+			Console.show( "The 'notes file' must be created", true );
 		} catch( Exception e ) {
 			e.printStackTrace();
 		}
